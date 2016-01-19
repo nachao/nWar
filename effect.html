@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>nWar</title>
+		<style>
+
+			.war{
+				/*position: relative;*/
+				/*width: 100px;*/
+				/*height: 100px;*/
+				/*top: 200px;*/
+				/*left: 50%;*/
+				/*margin-left: -50px;*/
+			}
+
+
+			.comm {
+				display: inline-block;
+				width: 50px;
+				height: 50px;
+				line-height: 50px;
+				border-radius: 50%;
+				text-align: center;
+				color: white;
+				font-family: Arail;
+				float: left;
+				margin: 200px;
+			}
+			
+			.item{
+				background-color: #eee;
+				cursor: pointer;
+				z-index: 1;
+			}
+			.item:hover{
+				background-color: #ddd;
+			}
+
+			/* 移动状态 */
+			.move{
+				z-index: 0;
+				background-color: #ccc;
+			}
+
+			/* 临时状态 */ 
+			.temp{
+				width: 20px;
+				height: 20px;
+			}
+
+			.have{
+				background-color: red;
+			}
+			.have:hover{
+				background-color: #C00;
+			}
+
+			.act{ 
+				box-shadow: 0 0 10px #111;
+			}
+
+		</style>
+	</head>
+	<body>
+
+		<div class="war">
+			<div class="comm item"></div>
+			<div class="comm item"></div>
+		</div>
+
+		<script src="jquery-1.11.0.min.js" ></script>
+		<script src="narray-0.3.min.js" ></script>
+		<script src="velocity.min.js" ></script>
+		<script>
+
+
+			/**
+			*  @name 移动
+			*
+			*  @depict
+			*  
+			*/
+
+
+			// 从一个位置移动到另一个位置
+			function goto () {
+
+			}
+
+		</script>
+	</body>
+</html>
