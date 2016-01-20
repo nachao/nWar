@@ -206,6 +206,7 @@
 
 			var datas = [];
 
+			var users = ['my', 'computer'];
 
 
 			// 创建布局
@@ -213,8 +214,14 @@
 
 			// 随机拥有者位置
 			swipepad.owner({
-				name: 'Na Chao',
+				name: 'my',
 				color: '#CF000D'
+			});	
+
+			// 随机拥有者位置
+			swipepad.owner({
+				name: 'computer',
+				color: '#207de5'
 			});	
 
 			// 绑定所有已被拥有的元素，自增
@@ -233,24 +240,112 @@
 						growup.start(id);
 					});
 				}
+				else {
+					data.confirm = parseInt(type) / 100;
+				}
 
 			});
 
-			// 设置所有被占用的，默认为1
-			datas.$get('remark!=').$update(expand.rule[0]);
-
 			// 设置所有被占用的，自增初始化和开始
 			$.each(datas, function(i, data){
+
+				// 初始化全部
 				data.number = 0;
 				[data].$update(expand.rule[0]);
-				data.el.find('.growups-value').click(function(){
 
-					// 拥有者位置
-					swipepad.owner({
-						name: 'Na Chao',
-						color: '#CF000D'
-					}, data.id);
-					growup.start(data.id);
+				// 移动
+				data.el.find('.growups-value').click(function(){
+					var move = datas.$get('confirm > 0')[0],
+						number = 0;
+
+					// 如果有确认的
+					if ( move ) {
+						number = parseInt(move.number * move.confirm);
+
+						// 确保值大于0
+						if ( number <= 0 )
+							return;
+
+						move.number -= number;
+
+						// 占领无主
+						if ( !data.remark ) {
+							data.number += number;
+
+							// 新增拥有者位置
+							swipepad.owner({
+								name: move.remark,
+								color:  move.bg
+							}, data.id);
+
+							// 启动自增
+							growup.start(data.id);
+						}
+
+						// 迁移
+						else if ( data.remark == move.remark ) {
+							data.number += number;
+
+							// 启动自增
+							growup.start(data.id);
+						}
+
+						// 推进
+						else if ( data.remark != move.remark ) {
+
+							// 被抵住
+							if ( data.number > number ) {
+								data.number -= number;
+
+								// 启动自增
+								growup.start(data.id);
+							}
+
+							// 被占有
+							else if ( data.number < number ) {
+								data.number = number - data.number;
+
+								// 更改拥有者
+								swipepad.owner({
+									name: move.remark,
+									color:  move.bg
+								}, data.id);
+
+								// 启动自增
+								growup.start(data.id);
+							}
+
+							// 同归，无主
+							else {
+								growup.goto(data.id, 0);
+								swipepad.quit(data.id);
+								growup.end(data.id);
+							}
+
+						}
+
+						// move.number -= number;
+						// data.number += number;
+
+						// 新增拥有者位置
+						// swipepad.owner({
+						// 	name: move.remark,
+						// 	color:  move.bg
+						// }, data.id);
+
+						// 全部移动
+						if ( move.confirm == 1 ) {
+							growup.goto(move.id, 0);
+							swipepad.quit(move.id);
+							growup.end(move.id);
+						}
+						else{
+							growup.start(move.id);
+						}
+
+						// 恢复
+						move.confirm = 0;
+					}
 				});
 			});
 
