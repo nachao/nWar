@@ -9,12 +9,22 @@
 				margin: 0 auto;
 				position: relative;
 			}
-			.swipepad .swipepad-temp{
+			.swipepad .item{
+				width: 50%;
+				height: 50%;
+				margin: 25% 0 0 25%;
 				background-color: #eee;
+				border-radius: 50%;
+			}
+			.swipepad .item:hover{
+				background-color: #ddd;
+			}
+			.swipepad .swipepad-temp{
+				/*background-color: #eee;*/
 				position: absolute;
 			}
 			.swipepad .swipepad-temp:hover{
-				background-color: #ddd;
+				/*background-color: #ddd;*/
 			}
 			.swipepad .swipepad-template{
 				display: none;
@@ -34,7 +44,7 @@
 		<script src="narray-0.3.min.js" ></script>
 		<script src="velocity.min.js" ></script>
 
-		<script src="5.swipepad.js" ></script>
+		<script src="./lib/5.swipepad.js" ></script>
 		<script>
 
 
