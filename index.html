@@ -200,9 +200,288 @@
 		<script src="./lib/6.expand.js" ></script>		<!-- 元素功能 -->
 		<script>
 
-			var swipepad = new nW5(),
-				expand = new nW6(),
-				growup = new nW4();
+
+
+			function nWar () {
+
+				// 全部用户
+				this.users = [
+					{
+						name: 'aaa',
+						color: '',
+						value: 0
+					},
+					{
+						name: 'bbb',
+						color: '',
+						value: 0
+					}
+				];
+			}
+
+			// 定义方法
+			$.extend(nWar, {
+
+				// 引用工具
+				lib: {
+					swipepad: new nW5(),
+					expand: new nW6(),
+					growup: new nW4()
+				},
+
+				// 全部位置
+				places: [],
+
+				// 当前操作的位置
+				operate: null,
+
+				// 全部用户
+				users: [
+					{
+						id: (new Date().getTime() + parseInt(Math.random() * 360)).toString(36),
+						name: 'aaa',
+						color: 'red',
+						value: 0,
+						// places: []
+					},
+					{
+						id: (new Date().getTime() + parseInt(Math.random() * 360)).toString(36),
+						name: 'bbb',
+						color: 'blue',
+						value: 0,
+						// places: []
+					}
+				],
+
+				// 开始
+				start: function () {
+					var result;
+
+					result = this.lib.swipepad.create();	// 创建布局
+					this.places = result;
+
+					return result;
+				},
+
+				// 分配
+				allot: function () {
+					var that = this,
+						place;
+
+					// 布局创建
+					this.places = this.lib.swipepad.create();
+
+					// 布局数据初始化
+					$.each(this.places, function(i, place){
+
+						// 资源功能绑定
+						$.extend(place.resource, that.lib.growup.get());
+
+						// 按钮功能绑定
+						that.lib.expand.bind(place);
+
+						// 方法绑定
+						that.placeMethod(place);
+
+						// 位置点击事件初始化
+						place.opt.click(function(){
+							that.move(that.operate, place);
+						});
+					});
+
+					return this.places;
+
+					// 拥有者位置部署
+					$.each(this.users, function(i, user){
+
+						// 位置随机分配一个给用户
+						place = that.lib.swipepad.owner(user);
+
+						// 位置开始资源增长
+						that.lib.growup.start(place.id);
+					});
+
+					// 位置按钮功能定义
+					that.lib.expand.click(function(id, type){
+						var place = that.places.$get(id)[0];
+
+						// 位置升级
+						if ( type == 'up' ) {
+							place.upgrade();
+						}
+
+						// 位置移动比例选择
+						else {
+							place.confirm = parseInt(type) / 100;
+
+							// 位置保存至操作选择状态
+							that.operate = place;
+						}
+					});
+				},
+
+				// 移动，从一个位置移动到另一个位置
+				move: function ( source, target ) {
+					var number = parseInt(source.number * source.confirm);
+						// type = this.moveType(source, target, number);
+
+					// 确保来源位置和目标位置都有
+					if ( !source && !target )
+						return;
+
+					// 确保来源和目标不相同
+					if ( source.id == target.id )
+						return;
+
+					// 确保来源移动值大于0
+					if ( number <= 0 )
+						return;
+
+					// 执行移动
+					// this[type](source, target, number);
+					this.moveType(source, target, number)
+
+					// 全部移动时，来源位置撤离资源
+					// if ( source.confirm == 1 ) {
+					// 	source.leave();
+					// }
+
+					// 刷新位置资源
+					this.lib.growup.start(target.id);
+					this.lib.growup.start(source.id);
+				},
+
+				// 判断移动类型
+				moveType: function ( source, target, number ) {
+
+					// 目标位置无拥有者
+					if ( !target.remark ) {
+						source.detach(number);
+						target.station(number);
+						target.owner(source.uid);	// 新位置归属拥有者
+					}
+
+					// 迁移
+					else if ( source.remark == target.remark ) {
+						source.detach(number);
+						target.station(number);
+					}
+
+					// 推进
+					else if ( source.remark != target.remark ) {
+
+						// 进攻
+						if ( target.number > number ) {
+							source.detach(number);
+							target.detach(number);
+						}
+
+						// 攻占
+						else if ( target.number < number ) {
+							source.detach(number);
+							target.detach(target.number);
+							target.station(number - target.number);
+							target.owner(source.uid);	// 更改拥有者
+						}
+
+						// 同归
+						else if ( target.number == number ) {
+							source.leave();
+							target.leave();
+						}
+					}
+				},
+
+				// 位置方法
+				placeMethod: function ( place ) {
+					
+					// 位置扩展方法
+					$.extend(place, {
+						
+						// 设置所有者
+						owner: function ( uid ) {
+							var user = that.users.$get(uid)[0];
+
+							// 设置位置归属拥有者
+							that.lib.swipepad.owner({
+								uid: user.id,
+								name: user.name,
+								color: user.color
+							}, place.id);
+						},
+
+						// 撤离
+						leave: function () {
+							console.log(place.id);
+							that.lib.growup.goto(place.id, 0);
+							that.lib.growup.end(place.id);
+							that.lib.swipepad.quit(place.id);
+						},
+
+						// 派遣出去
+						detach: function ( value ) {
+							if ( place.number < value )
+								value = place.number;
+
+							if ( place.number == value ) {
+								place.leave();
+							}
+							else {
+								place.number -= value;
+							}
+						},
+
+						// 驻扎进来
+						station: function ( value ) {
+							place.number += value;
+						},
+
+						// 升级
+						upgrade: function () {
+							that.lib.expand.up(place.id, function(){
+								$(place.el).find('.swipepad-name').html(place.value);
+
+								// 重置并生产资源
+								that.lib.growup.start(place.id);
+							});
+						}
+					});
+				}
+			});
+
+
+
+			nw = nWar;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			/*
+
+
+
+
+
+
+
+
+
+
+
 
 			var datas = [];
 
@@ -355,6 +634,8 @@
 				growup.start(data.id);
 			});
 			
+
+			*/
 
 
 		</script>
