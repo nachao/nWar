@@ -176,11 +176,14 @@
 	</head>
 	<body>
 
+		<p id="nwScore"></p>
+
 		<div class="swipepad" id="swipepad">
 			<div class="swipepad-template" id="swipepad-template">
 				<div class="swipepad-item">
 					<div class="growups-value"></div>
 					<div class="swipepad-contain nexpand-contain">
+						<span class="swipepad-point"></span>
 						<span class="swipepad-owner"></span>
 					</div>
 				</div>
@@ -224,14 +227,14 @@
 				groups: [
 					{
 						uid: (new Date().getTime() + parseInt(Math.random() * 360)).toString(36),
-						name: 'aaa',
-						color: 'red',
+						name: '罗斌',
+						color: 'orange',
 						value: 0
 					},
 					{
 						uid: (new Date().getTime() + parseInt(Math.random() * 360)).toString(36),
-						name: 'bbb',
-						color: 'blue',
+						name: '李耀',
+						color: 'gray',
 						value: 0
 					}
 				],
@@ -250,9 +253,6 @@
 
 					// 布局创建
 					this.places = this.lib.swipepad.create();
-
-					// 绑定资源功能
-					// nw.lib.growup.data
 
 					// 布局数据初始化
 					$.each(this.places, function(i, place){
@@ -286,22 +286,30 @@
 						that.lib.growup.start(place.id);
 					});
 
-					// 位置按钮功能定义
+					// 按钮功能定义
 					that.lib.expand.click(function(id, type){
 						var place = that.places.$get(id)[0];
 
 						// 位置升级
-						if ( type == 'up' ) {
+						if ( type == 'up' ) 
 							place.motion.upgrade();
-						}
 
 						// 位置移动比例选择
-						else {
-							place.params.resource.confirm = parseInt(type) / 100;
+						else
+							place.motion.selected(type);
+					});
 
-							// 位置保存至操作选择状态
-							that.selected = place;
-						}
+					// 资源功能监听
+					that.lib.growup.on(function(res){
+						var result = '';
+						$.each(that.groups, function(i, user){
+							result += '<br/>';
+							result += user.name + '：';
+							result += that.lib.growup.total(user.uid);
+							result += '分';
+						});
+						// console.log(res);
+						$('#nwScore').html(result);
 					});
 				},
 
@@ -322,11 +330,10 @@
 					if ( number <= 0 )
 						return;
 
-					console.log(type);
+					this.lib.swipepad.move(source, target, number);
 
 					// 执行移动
-					this[type](source, target, number);
-					// this.moveType(source, target, number)
+					// this[type](source, target, number);
 
 					// 刷新位置资源
 					this.lib.growup.start(target.id);
@@ -360,47 +367,71 @@
 							result = 'toGsvj';
 						}
 
-						// 同归
+						// 全灭
 						else if ( target.params.resource.value == number ) {
-							result = 'toCofinal';
+							result = 'toEntirely';
 						}
 					}
 
 					return result;
 				},
 
-				// 占领 
+				/********************************************
+					所有动作
+				*********************************************/
+
+				// 占领
 				toNew: function ( source, target, number ) {
-					source.motion.detach(number);
-					target.motion.station(number);
+
+					source.motion.shift(target, number);
+
+
+					// source.motion.detach(number, '迁移');
+					// target.motion.station(number, '占领');
 					target.motion.owner(source.params.user.uid);	// 新位置归属拥有者
 				},
 
 				// 迁移 
 				toShift: function ( source, target, number ) {
-					source.motion.detach(number);
-					target.motion.station(number);
+					source.motion.detach(number, '迁移');
+					target.motion.station(number, '驻扎');
 				},
 
 				// 进攻
 				toAttack: function ( source, target, number ) {
-					source.motion.detach(number);
-					target.motion.detach(number);
+					source.motion.detach(number, '进攻');
+					target.motion.detach(number, '防守');
 				},
 
 				// 攻占
 				toGsvj: function ( source, target, number ) {
-					source.motion.detach(number);
-					target.motion.detach(target.params.resource.value);
-					target.motion.station(number - target.params.resource.value);
+					source.motion.detach(number, '进攻');
+					target.motion.detach(target.params.resource.value, '防守');
+					target.motion.station(number - target.params.resource.value, '攻占');
 					target.motion.owner(source.params.user.uid);	// 更改拥有者
 				},
 
-				// 同归
-				toCofinal: function ( source, target, number ) {
-					source.motion.leave();
+				// 全灭
+				toEntirely: function ( source, target, number ) {
+					source.motion.detach(number, '进攻');
+					target.motion.detach(number, '失守');
 					target.motion.leave();
 				},
+
+				// 升级
+				toUpgrade: function ( source, target, number ) {
+					source.motion.upgrade();
+				},
+
+				// 扩建
+				toExtend: function ( uid ) {
+					this.lib.swipepad.random()		// 随机获取一个空位置
+						.motion.owner(uid);			// 设置所有者
+				},
+
+				/********************************************
+					扩展方法
+				*********************************************/
 
 				// 位置方法
 				placeMethod: function ( place ) {
@@ -408,7 +439,36 @@
 					
 					// 位置扩展方法
 					$.extend(place.motion, {
-						
+
+						// 移动指定数量的
+						into: function ( source, number ) {
+
+							// 占领
+							if ( !place.params.user.uid ) {
+								place.motion.station(number, '占领');
+								place.motion.owner(source.params.user.uid);	// 新位置归属拥有者
+							}
+							
+							// 迁移
+							else if ( place.params.user.uid == source.params.user.uid ) {
+								place.motion.station(number, '驻扎');
+							}
+							
+							// 进攻
+							else if ( place.params.user.uid != source.params.user.uid ) {
+								place.motion.detach(number, '防守');
+							}
+
+							// 失守
+							if ( place.params.resource.value <= 0 ) {
+								place.motion.leave();
+							}
+
+							// 刷新位置资源
+							that.lib.growup.start(place.id);
+							that.lib.growup.start(source.id);
+						},
+
 						// 设置所有者
 						owner: function ( uid ) {
 							var user = that.groups.$get(uid)[0];
@@ -416,34 +476,37 @@
 							// 设置位置归属拥有者
 							if ( user )
 								that.lib.swipepad.user(place, user);
+
+							return place;
 						},
 
 						// 撤离
 						leave: function () {
-							that.lib.growup.set(place.id, 0);
 							that.lib.growup.end(place.id);
 							that.lib.swipepad.quit(place.id);
 						},
 
 						// 派遣出去
-						detach: function ( value ) {
-							if ( place.params.resource.value <= value ) {
+						detach: function ( value, remark ) {
+							place.motion.subValue(value, remark);
+
+							// 弃城
+							if ( place.params.resource.confirm == 1 ) {
 								place.motion.leave();
-							}
-							else {
-								place.motion.subValue(value);
 							}
 						},
 
 						// 驻扎进来
-						station: function ( value ) {
-							place.motion.addValue(value);
+						station: function ( value, remark ) {
+							place.motion.addValue(value, remark);
 						},
 
-						// 升级
+						// 升级 资源增长
 						upgrade: function () {
-							that.lib.expand.up(place.id, function(){
-								$(place.el).find('.swipepad-name').html(place.params.resource.value);
+							that.lib.growup.up(place.id, function(){
+
+								// 更新位置参数显示
+								that.lib.swipepad.set(place.id);
 
 								// 重置并生产资源
 								that.lib.growup.start(place.id);
@@ -451,18 +514,31 @@
 						},
 
 						// 设置资源
-						value: function ( value ) {
-							that.lib.growup.set(place.id, value);
+						value: function ( value, remark ) {
+							that.lib.growup.set(place.id, value, remark);
+							that.lib.swipepad.set(place.id, value)
 						},
 
 						// 添加资源
-						addValue: function ( value ) {
-							that.lib.growup.set(place.id, place.params.resource.value + value);
+						addValue: function ( value, uid, remark ) {
+							if ( place.params.user.uid == uid ) {
+
+							}
+							// place.motion.value(place.params.resource.value + value, remark);
 						},
 
 						// 减少资源
-						subValue: function ( value ) {
-							that.lib.growup.set(place.id, place.params.resource.value - value);
+						subValue: function ( value, remark ) {
+							place.motion.value(place.params.resource.value - value, remark);
+						},
+
+						// 选择
+						// @param {string} value = percent
+						selected: function ( value ) {
+							place.params.resource.confirm = parseInt(value) / 100;
+
+							// 位置保存至操作选择状态
+							that.selected = place;
 						}
 					});
 
@@ -471,192 +547,214 @@
 			});
 
 
-
 			nw = nWar;
 
 
+			/********************************************
+				机器人
+			*********************************************/
 
+			// 随机执行
+			// 决定：扩建、升级、进攻、防守
+			function auto ( uid ) {
 
+				// 获取我的全部资源总值
+				var total = nw.lib.growup.total(uid);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-			/*
-
-
-
-
-
-
-
-
-
-
-
-
-			var datas = [];
-
-			var users = ['my', 'computer'];
-
-
-			// 创建布局
-			datas = swipepad.create();
-
-			// 随机拥有者位置
-			swipepad.owner({
-				name: 'my',
-				color: '#CF000D'
-			});	
-
-			// 随机拥有者位置
-			swipepad.owner({
-				name: 'computer',
-				color: '#207de5'
-			});	
-
-			// 绑定所有已被拥有的元素，自增
-			growup.bind(datas);
-
-			// 绑定功能
-			expand.bind(datas);
-
-			// 绑定对应的点击事件
-			expand.click(function(id, type){
-				var data = datas.$get('id='+ id)[0];
-
-				if ( type == 'up' ) {
-					expand.up(id, function(){
-						$(data.el).find('.swipepad-name').html(data.value);
-						growup.start(id);
-					});
-				}
-				else {
-					data.confirm = parseInt(type) / 100;
-				}
-
-			});
-
-			// 设置所有被占用的，自增初始化和开始
-			$.each(datas, function(i, data){
-
-				// 初始化全部
-				data.number = 0;
-				[data].$update(expand.rule[0]);
-
-				// 移动
-				data.el.find('.growups-value').click(function(){
-					var move = datas.$get('confirm > 0')[0],
-						number = 0;
-
-					// 如果有确认的
-					if ( move ) {
-						number = parseInt(move.number * move.confirm);
-
-						// 确保值大于0
-						if ( number <= 0 )
-							return;
-
-						move.number -= number;
-
-						// 占领无主
-						if ( !data.remark ) {
-							data.number += number;
-
-							// 新增拥有者位置
-							swipepad.owner({
-								name: move.remark,
-								color:  move.bg
-							}, data.id);
-
-							// 启动自增
-							growup.start(data.id);
-						}
-
-						// 迁移
-						else if ( data.remark == move.remark ) {
-							data.number += number;
-
-							// 启动自增
-							growup.start(data.id);
-						}
-
-						// 推进
-						else if ( data.remark != move.remark ) {
-
-							// 被抵住
-							if ( data.number > number ) {
-								data.number -= number;
-
-								// 启动自增
-								growup.start(data.id);
-							}
-
-							// 被占有
-							else if ( data.number < number ) {
-								data.number = number - data.number;
-
-								// 更改拥有者
-								swipepad.owner({
-									name: move.remark,
-									color:  move.bg
-								}, data.id);
-
-								// 启动自增
-								growup.start(data.id);
-							}
-
-							// 同归，无主
-							else {
-								growup.goto(data.id, 0);
-								swipepad.quit(data.id);
-								growup.end(data.id);
-							}
-
-						}
-
-						// move.number -= number;
-						// data.number += number;
-
-						// 新增拥有者位置
-						// swipepad.owner({
-						// 	name: move.remark,
-						// 	color:  move.bg
-						// }, data.id);
-
-						// 全部移动
-						if ( move.confirm == 1 ) {
-							growup.goto(move.id, 0);
-							swipepad.quit(move.id);
-							growup.end(move.id);
-						}
-						else{
-							growup.start(move.id);
-						}
-
-						// 恢复
-						move.confirm = 0;
-					}
+				// 获取我的全部位置
+				var my = [];
+				$.each(nw.places.$get(uid).$path, function(i, place){
+					my.push(place.value[1]);
 				});
-			});
 
-			// 设置所有被占用的，自增初始化和开始
-			$.each(datas.$get('remark!='), function(i, data){
-				data.number = 0;
-				growup.start(data.id);
-			});
-			
+				// 获取我的全部可升级的位置
+				var upgradeable = [];
+				$.each(my, function(i, place){
+					if ( place.params.resource.value >= place.params.resource.consume )
+						upgradeable.push(place);
+				});
 
-			*/
+				// 获取敌对全部位置
+				var hostile = [];
+				$.each(nw.places.$get('uid!='+ uid +'|!=', true).$path, function(i, place){
+					hostile.push(place.value[1]);
+				});
+
+				// 获取全部空位置
+				var emptys = [];
+				$.each(nw.places.$get('uid=').$path, function(i, place){
+					emptys.push(place.value[1]);
+				});
+
+
+
+
+				// 可做的决策
+				var tolerable = [];
+
+				// 决策比例
+				var decisionRatio = [],
+					decisionTotal = 0;
+
+				// 可升级的
+				if ( upgradeable.length ) {
+					tolerable.push({
+						key: '1',
+						value: upgradeable.length
+					});
+					decisionTotal += upgradeable.length;
+				}
+
+				// 可进攻的
+				if ( hostile.length ) {
+					tolerable.push({
+						key: '2',
+						value: hostile.length
+					});
+					decisionTotal += hostile.length;
+				}
+				
+				// 可扩展的
+				if ( emptys.length ) {
+					tolerable.push({
+						key: '3',
+						value: emptys.length
+					});
+					decisionTotal += emptys.length;
+				}
+
+				// 可迁移的
+				if ( my.length > 1 ) {
+					tolerable.push({
+						key: '4',
+						value: my.length
+					});
+					decisionTotal += my.length;
+				}
+
+				// 决策比例
+				$.each(tolerable, function(index, decision){
+					var min = 0;
+
+					if ( decisionRatio.length )
+						min = decisionRatio[decisionRatio.length-1].max;
+
+					decisionRatio.push({
+						key: decision.key,
+						min: min,
+						max: min + parseInt(decision.value/decisionTotal*100)
+					});
+				});
+
+
+
+				// 随机一个决定
+				var	random = parseInt(Math.random() * 100),
+					decide = decisionRatio.$get('min<='+ random +', max>='+ random, true)[0];
+
+				console.log(random, decisionRatio);
+
+				// 执行随机决定
+				switch ( decide.key ) {
+					
+					// 扩建
+					case '3':
+						var source = my[parseInt(Math.random() * my.length)],
+							target =  emptys[parseInt(Math.random() * emptys.length)];
+
+						// 随机派遣数量
+						var percentage = ['25%', '50%', '75%', '100%'],
+							random = percentage[parseInt(Math.random() * percentage.length)];
+						source.motion.selected(random);
+
+						// 设置所有者
+						target.motion.owner(uid);
+
+						// 执行
+						nw.move(source, target);
+						break;
+
+					// 升级
+					case '1':
+						var random = parseInt(Math.random() * upgradeable.length),
+							source = upgradeable[random];
+						console.log(upgradeable, random, source);
+						source.motion.upgrade();
+						break;
+
+					// 进攻
+					case '2':
+
+						// 随机派遣和进攻目标
+						var source = my[parseInt(Math.random() * my.length)],
+							target = hostile[parseInt(Math.random() * hostile.length)];
+
+						// 随机派遣数量
+						var percentage = ['25%', '50%', '75%', '100%'];
+						source.motion.selected(percentage[parseInt(Math.random() * percentage.length)]);
+
+						// 执行
+						nw.move(source, target);
+						break;
+
+					// 防守（迁移）
+					case '4':
+
+						// 随机派遣和进攻目标
+						var source = my[parseInt(Math.random() * my.length)],
+							target = my.$get('id!=' + source.id)[parseInt(Math.random() * my.$get('id!=' + source.id).length)];
+
+						// 随机派遣数量
+						var percentage = ['25%', '50%', '75%', '100%'];
+						source.motion.selected(percentage[parseInt(Math.random() * percentage.length)]);
+
+						// 执行
+						nw.move(source, target);
+						break;
+				}
+
+				// 如果还有资源
+				if ( nw.lib.growup.total(uid) > 0 ) {
+					setTimeout(function(){
+						auto(uid);
+					}, Math.random() * 1000 + 1000);
+				}
+			}
+
+
+
+
+			/********************************************
+				初始化
+			*********************************************/
+
+			// 执行
+			nw.allot();
+
+			// 全部用户执行随机操作
+			// $.each(nw.groups, function(i, user){
+			// 	setTimeout(function(){
+			// 		auto(user.uid);
+			// 	}, Math.random() * 1000 + 1000);
+			// })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 		</script>
