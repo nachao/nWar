@@ -34,7 +34,7 @@
 				display: none;
 			}
 			.swipepad-contain{
-				display: none;
+				/*display: none;*/
 				width: 100%;
 				height: 100%;
 				position: relative;
@@ -101,12 +101,16 @@
 				/*position: relative;*/
 			}
 			.nexpand-btns {
+				display: none;
 				width: 50px;
 				height: 100px;
 				border-radius: 3px;
 				display: none;
 				float: right;
 				margin-right: -50px;
+			}
+			.swipepad-active:hover .nexpand-btns{
+				display: inline-block;
 			}
 
 			.nexpand-btn{
@@ -176,8 +180,6 @@
 	</head>
 	<body>
 
-		<p id="nwScore"></p>
-
 		<div class="swipepad" id="swipepad">
 			<div class="swipepad-template" id="swipepad-template">
 				<div class="swipepad-item">
@@ -194,10 +196,13 @@
 			</div>
 		</div>
 
+		<p id="nwScore"></p>
+
 
 		<script src="jquery-1.11.0.min.js" ></script>
 		<script src="narray-0.3.min.js" ></script>
 		<script src="vue.js" ></script>
+		<script src="./lib/3.js" ></script>		<!-- 自增 -->
 		<script src="./lib/4.growup.js" ></script>		<!-- 自增 -->
 		<script src="./lib/5.swipepad.js" ></script>	<!-- 宫格 -->
 		<script src="./lib/6.expand.js" ></script>		<!-- 元素功能 -->
@@ -227,29 +232,55 @@
 				groups: [
 					{
 						uid: (new Date().getTime() + parseInt(Math.random() * 360)).toString(36),
-						name: '罗斌',
+						name: '电脑1',
 						color: 'orange',
-						value: 0
+						value: 0,
+						selected: null,
+						auto: true
 					},
 					{
 						uid: (new Date().getTime() + parseInt(Math.random() * 360)).toString(36),
-						name: '李耀',
+						name: '电脑2',
+						color: 'blue',
+						value: 0,
+						selected: null,
+						auto: true
+					},
+					{
+						uid: (new Date().getTime() + parseInt(Math.random() * 360)).toString(36),
+						name: '罗斌',
+						color: 'red',
+						value: 0,
+						selected: null,
+						auto: false
+					},
+					{
+						uid: (new Date().getTime() + parseInt(Math.random() * 360)).toString(36),
+						name: 'William',
 						color: 'gray',
-						value: 0
-					}
+						selected: null,
+						value: 0,
+						auto: true
+					},
+					// {
+					// 	uid: (new Date().getTime() + parseInt(Math.random() * 360)).toString(36),
+					// 	name: 'James',
+					// 	color: 'yellow',
+					// 	selected: null,
+					// 	value: 0,
+					// 	auto: true
+					// }
 				],
+
+				// 控制
+				control: '',
 
 				// 开始
 				start: function () {
-					var result;
+					var that = this;
 
-					return result;
-				},
-
-				// 分配
-				allot: function () {
-					var that = this,
-						place;
+					// 设置总数量
+					this.lib.swipepad.conf.total = 12;
 
 					// 布局创建
 					this.places = this.lib.swipepad.create();
@@ -268,8 +299,8 @@
 
 						// 位置点击事件初始化
 						place.el.find('.growups-value').click(function(){
-							if ( that.selected )
-								that.move(that.selected, place);
+							if ( that.control && that.control.selected )
+								that.move(that.control.selected, place);
 						});
 					});
 
@@ -277,7 +308,7 @@
 					$.each(this.groups, function(i, user){
 
 						// 随机获取一个空位置
-						place = that.lib.swipepad.random();
+						var place = that.lib.swipepad.random();
 
 						// 绑定指定给用户
 						place = that.lib.swipepad.user(place, user)
@@ -288,35 +319,31 @@
 
 					// 按钮功能定义
 					that.lib.expand.click(function(id, type){
-						var place = that.places.$get(id)[0];
+						var place = that.getPlace(id);
 
 						// 位置升级
 						if ( type == 'up' ) 
 							place.motion.upgrade();
 
 						// 位置移动比例选择
-						else
-							place.motion.selected(type);
+						else if ( that.control )
+							place.motion.selected(that.control, type);
 					});
 
-					// 资源功能监听
-					that.lib.growup.on(function(res){
-						var result = '';
-						$.each(that.groups, function(i, user){
-							result += '<br/>';
-							result += user.name + '：';
-							result += that.lib.growup.total(user.uid);
-							result += '分';
-						});
-						// console.log(res);
-						$('#nwScore').html(result);
-					});
+					return that;
+				},
+
+				// 分配控制器
+				allot: function ( user ) {
+					var that = this
+
+					return that;
 				},
 
 				// 移动，从一个位置移动到另一个位置
 				move: function ( source, target ) {
 					var number = parseInt(source.params.resource.value * source.params.resource.confirm);
-						type = this.moveType(source, target, number);
+						// type = this.moveType(source, target, number);
 
 					// 确保来源位置和目标位置都有
 					if ( !source && !target )
@@ -327,52 +354,122 @@
 						return;
 
 					// 确保来源移动值大于0
-					if ( number <= 0 )
-						return;
-
-					this.lib.swipepad.move(source, target, number);
+					// if ( number <= 0 )
+					// 	return;
 
 					// 执行移动
 					// this[type](source, target, number);
+					this.lib.swipepad.move(source, target, number);
 
 					// 刷新位置资源
-					this.lib.growup.start(target.id);
-					this.lib.growup.start(source.id);
+					// this.lib.growup.start(target.id);
+					// this.lib.growup.start(source.id);
 				},
 
 				// 判断移动类型
-				moveType: function ( source, target, number ) {
+				// moveType: function ( source, target, number ) {
+				// 	var result;
+
+				// 	// 目标位置无拥有者
+				// 	if ( !target.params.user.uid ) {
+				// 		result = 'toNew';
+				// 	}
+
+				// 	// 迁移
+				// 	else if ( source.params.user.uid == target.params.user.uid ) {
+				// 		result = 'toShift';
+				// 	}
+
+				// 	// 推进
+				// 	else if ( source.params.user.uid != target.params.user.uid ) {
+
+				// 		// 进攻
+				// 		if ( target.params.resource.value > number ) {
+				// 			result = 'toAttack';
+				// 		}
+
+				// 		// 攻占
+				// 		else if ( target.params.resource.value < number ) {
+				// 			result = 'toGsvj';
+				// 		}
+
+				// 		// 全灭
+				// 		else if ( target.params.resource.value == number ) {
+				// 			result = 'toEntirely';
+				// 		}
+				// 	}
+
+				// 	return result;
+				// },
+
+
+				/********************************************
+					排序类
+				*********************************************/
+
+				sortPlace: function ( array, order ) {
+					function s ( o, r ) { return o ? !!r : !r; }
+					return array.sort(function(a, b){
+						if ( s ( order, a.params.resource.value < b.params.resource.value ) )
+							return -1;
+						else if ( s ( order, a.params.resource.value > b.params.resource.value ) )
+							return 1;
+						else
+							return 0;
+					});
+				},
+
+				/********************************************
+					查询类
+				*********************************************/
+
+				// 获取指定位置
+				getPlace: function ( pid ) {
 					var result;
+					$.each(this.places, function(i, place){
+						if ( place.id == pid ) 
+							return result = place;
+					});
+					return result;
+				},
 
-					// 目标位置无拥有者
-					if ( !target.params.user.uid ) {
-						result = 'toNew';
-					}
+				// 获取位置集合，根据 uid
+				getPlacesByUid: function ( uid ) {
+					var result = [];
+					$.each(this.places, function(i, place){
+						if ( place.params.user.uid == uid ) 
+							result.push(place);
+					});
+					return result;
+				},
 
-					// 迁移
-					else if ( source.params.user.uid == target.params.user.uid ) {
-						result = 'toShift';
-					}
+				// 获取除此用户的其他用户位置集合，根据 uid
+				getOtherPlacesByUid: function ( uid ) {
+					var result = [];
+					$.each(this.places, function(i, place){
+						if ( place.params.user.uid != uid && place.params.user.uid != '' ) 
+							result.push(place);
+					});
+					return result;
+				},
 
-					// 推进
-					else if ( source.params.user.uid != target.params.user.uid ) {
+				// 获取空位置集合
+				getEmptyPlaces: function () {
+					var result = [];
+					$.each(this.places, function(i, place){
+						if ( !place.params.user.uid ) 
+							result.push(place);
+					});
+					return result;
+				},
 
-						// 进攻
-						if ( target.params.resource.value > number ) {
-							result = 'toAttack';
-						}
-
-						// 攻占
-						else if ( target.params.resource.value < number ) {
-							result = 'toGsvj';
-						}
-
-						// 全灭
-						else if ( target.params.resource.value == number ) {
-							result = 'toEntirely';
-						}
-					}
-
+				// 获取指定用户，根据 uid 和 name
+				getUser: function ( value ) {
+					var result;
+					$.each(this.groups, function(i, user){
+						if ( user.uid == value || user.name == value ) 
+							return result = user;
+					});
 					return result;
 				},
 
@@ -381,53 +478,53 @@
 				*********************************************/
 
 				// 占领
-				toNew: function ( source, target, number ) {
+				// toNew: function ( source, target, number ) {
 
-					source.motion.shift(target, number);
+				// 	source.motion.shift(target, number);
 
 
-					// source.motion.detach(number, '迁移');
-					// target.motion.station(number, '占领');
-					target.motion.owner(source.params.user.uid);	// 新位置归属拥有者
-				},
+				// 	// source.motion.detach(number, '迁移');
+				// 	// target.motion.station(number, '占领');
+				// 	target.motion.owner(source.params.user.uid);	// 新位置归属拥有者
+				// },
 
-				// 迁移 
-				toShift: function ( source, target, number ) {
-					source.motion.detach(number, '迁移');
-					target.motion.station(number, '驻扎');
-				},
+				// // 迁移 
+				// toShift: function ( source, target, number ) {
+				// 	source.motion.detach(number, '迁移');
+				// 	target.motion.station(number, '驻扎');
+				// },
 
-				// 进攻
-				toAttack: function ( source, target, number ) {
-					source.motion.detach(number, '进攻');
-					target.motion.detach(number, '防守');
-				},
+				// // 进攻
+				// toAttack: function ( source, target, number ) {
+				// 	source.motion.detach(number, '进攻');
+				// 	target.motion.detach(number, '防守');
+				// },
 
-				// 攻占
-				toGsvj: function ( source, target, number ) {
-					source.motion.detach(number, '进攻');
-					target.motion.detach(target.params.resource.value, '防守');
-					target.motion.station(number - target.params.resource.value, '攻占');
-					target.motion.owner(source.params.user.uid);	// 更改拥有者
-				},
+				// // 攻占
+				// toGsvj: function ( source, target, number ) {
+				// 	source.motion.detach(number, '进攻');
+				// 	target.motion.detach(target.params.resource.value, '防守');
+				// 	target.motion.station(number - target.params.resource.value, '攻占');
+				// 	target.motion.owner(source.params.user.uid);	// 更改拥有者
+				// },
 
-				// 全灭
-				toEntirely: function ( source, target, number ) {
-					source.motion.detach(number, '进攻');
-					target.motion.detach(number, '失守');
-					target.motion.leave();
-				},
+				// // 全灭
+				// toEntirely: function ( source, target, number ) {
+				// 	source.motion.detach(number, '进攻');
+				// 	target.motion.detach(number, '失守');
+				// 	target.motion.leave();
+				// },
 
-				// 升级
-				toUpgrade: function ( source, target, number ) {
-					source.motion.upgrade();
-				},
+				// // 升级
+				// toUpgrade: function ( source, target, number ) {
+				// 	source.motion.upgrade();
+				// },
 
-				// 扩建
-				toExtend: function ( uid ) {
-					this.lib.swipepad.random()		// 随机获取一个空位置
-						.motion.owner(uid);			// 设置所有者
-				},
+				// // 扩建
+				// toExtend: function ( uid ) {
+				// 	this.lib.swipepad.random()		// 随机获取一个空位置
+				// 		.motion.owner(uid);			// 设置所有者
+				// },
 
 				/********************************************
 					扩展方法
@@ -440,44 +537,49 @@
 					// 位置扩展方法
 					$.extend(place.motion, {
 
-						// 移动指定数量的
-						into: function ( source, number ) {
-
-							// 占领
-							if ( !place.params.user.uid ) {
-								place.motion.station(number, '占领');
-								place.motion.owner(source.params.user.uid);	// 新位置归属拥有者
-							}
-							
-							// 迁移
-							else if ( place.params.user.uid == source.params.user.uid ) {
-								place.motion.station(number, '驻扎');
-							}
-							
-							// 进攻
-							else if ( place.params.user.uid != source.params.user.uid ) {
-								place.motion.detach(number, '防守');
-							}
-
-							// 失守
-							if ( place.params.resource.value <= 0 ) {
-								place.motion.leave();
-							}
-
-							// 刷新位置资源
-							that.lib.growup.start(place.id);
-							that.lib.growup.start(source.id);
-						},
-
 						// 设置所有者
 						owner: function ( uid ) {
-							var user = that.groups.$get(uid)[0];
+							var user = that.getUser(uid);;
 
 							// 设置位置归属拥有者
 							if ( user )
 								that.lib.swipepad.user(place, user);
 
 							return place;
+						},
+
+						// 移动指定数量的
+						into: function ( source, sourceuid, number ) {
+
+							// 占领
+							if ( !place.params.user.uid ) {
+								place.motion.station(number, '占领');
+								place.motion.owner(sourceuid);	// 新位置归属拥有者
+							}
+							
+							// 迁移
+							else if ( place.params.user.uid == sourceuid ) {
+								place.motion.station(number, '驻扎');
+
+								// 撤离
+								if ( source.params.resource.value <= 0 ) {
+									source.motion.leave();
+								}
+							}
+							
+							// 进攻
+							else if ( place.params.user.uid != sourceuid ) {
+								place.motion.detach(number, '防守');
+
+								// 失守
+								if ( place.params.resource.value <= 0 ) {
+									place.motion.leave();
+								}
+							}
+
+							// 刷新位置资源
+							that.lib.growup.start(place.id);
+							that.lib.growup.start(source.id);
 						},
 
 						// 撤离
@@ -521,10 +623,7 @@
 
 						// 添加资源
 						addValue: function ( value, uid, remark ) {
-							if ( place.params.user.uid == uid ) {
-
-							}
-							// place.motion.value(place.params.resource.value + value, remark);
+							place.motion.value(place.params.resource.value + value, remark);
 						},
 
 						// 减少资源
@@ -534,11 +633,11 @@
 
 						// 选择
 						// @param {string} value = percent
-						selected: function ( value ) {
+						selected: function ( user, value ) {
 							place.params.resource.confirm = parseInt(value) / 100;
 
 							// 位置保存至操作选择状态
-							that.selected = place;
+							user.selected = place;
 						}
 					});
 
@@ -546,8 +645,39 @@
 				}
 			});
 
-
 			nw = nWar;
+
+
+			/********************************************
+				控制器
+			*********************************************/
+
+			function nWarController () {}
+
+
+
+
+
+
+
+			/********************************************
+				监听变化
+			*********************************************/
+
+			// 资源功能监听
+			nw.lib.growup.on(function(res){
+				var result = '';
+				$.each(nw.groups, function(i, user){
+					result += '<br/>';
+					result += user.name + '：';
+					result += nw.lib.growup.total(user.uid);
+					result += '分';
+				});
+				// console.log(res);
+				$('#nwScore').html(result);
+			});
+
+
 
 
 			/********************************************
@@ -558,14 +688,68 @@
 			// 决定：扩建、升级、进攻、防守
 			function auto ( uid ) {
 
+				// 根据数据集合计算数据执行比例
+				function getRatio ( array ) {
+					var proportion = [],
+						total = 0,
+						result;
+
+					// 获取总值
+					$.each(array, function(i){
+						total += i;
+					});
+
+					// 决策比例
+					$.each(array, function(weight, item){
+						var min = 0,
+							max = 0;
+
+						// 取最小值，根据上一个决策的最大值
+						if ( proportion.length )
+							min = proportion[proportion.length-1].max;
+
+						// 如果有自定权重
+						if ( item.weight )
+							weight = item.weight;
+
+						// 如果是最后一个确保最大值为100
+						if ( weight >= array.length -1 )
+							max = 100;
+						else
+							max = min + parseInt(weight/total*100);
+
+						// 保存计算结果
+						proportion.push({
+							key: item.key || item,
+							value: item,
+							min: min,
+							max: max
+						});
+					});
+
+					console.log(array, proportion);
+
+					// 随机一个决定
+					var	random = parseInt(Math.random() * 100);
+
+					// 获取
+					$.each(proportion, function(index, item){
+						if ( random >= item.min && random <= item.max )
+							return result = item.value;
+					});
+
+					// 返回
+					return result;
+				}
+
+
+				var user = nw.getUser(uid);
+
 				// 获取我的全部资源总值
 				var total = nw.lib.growup.total(uid);
 
 				// 获取我的全部位置
-				var my = [];
-				$.each(nw.places.$get(uid).$path, function(i, place){
-					my.push(place.value[1]);
-				});
+				var my = nw.getPlacesByUid(uid);
 
 				// 获取我的全部可升级的位置
 				var upgradeable = [];
@@ -575,16 +759,10 @@
 				});
 
 				// 获取敌对全部位置
-				var hostile = [];
-				$.each(nw.places.$get('uid!='+ uid +'|!=', true).$path, function(i, place){
-					hostile.push(place.value[1]);
-				});
+				var hostile = nw.getOtherPlacesByUid(uid);
 
 				// 获取全部空位置
-				var emptys = [];
-				$.each(nw.places.$get('uid=').$path, function(i, place){
-					emptys.push(place.value[1]);
-				});
+				var emptys = nw.getEmptyPlaces();
 
 
 
@@ -600,9 +778,9 @@
 				if ( upgradeable.length ) {
 					tolerable.push({
 						key: '1',
-						value: upgradeable.length
+						value: upgradeable.length * 1.5
 					});
-					decisionTotal += upgradeable.length;
+					decisionTotal += upgradeable.length  * 1.5;
 				}
 
 				// 可进攻的
@@ -618,31 +796,46 @@
 				if ( emptys.length ) {
 					tolerable.push({
 						key: '3',
-						value: emptys.length
+						value: emptys.length * 3
 					});
-					decisionTotal += emptys.length;
+					decisionTotal += emptys.length * 3;
 				}
 
 				// 可迁移的
 				if ( my.length > 1 ) {
 					tolerable.push({
 						key: '4',
-						value: my.length
+						value: my.length / 2
 					});
-					decisionTotal += my.length;
+					decisionTotal += my.length / 2;
+				}
+
+				// 观察
+				if ( my.length >= hostile.length ) {
+					tolerable.push({
+						key: '5',
+						value: my.length * 3
+					});
+					decisionTotal += my.length * 3;
 				}
 
 				// 决策比例
 				$.each(tolerable, function(index, decision){
-					var min = 0;
+					var min = 0,
+						max = min + parseInt(decision.value/decisionTotal*100);
 
+					// 取最小值
 					if ( decisionRatio.length )
 						min = decisionRatio[decisionRatio.length-1].max;
+
+					// 如果是最后一个确保最大值为100
+					if ( index+1 == tolerable.length )
+						max = 100;
 
 					decisionRatio.push({
 						key: decision.key,
 						min: min,
-						max: min + parseInt(decision.value/decisionTotal*100)
+						max: max
 					});
 				});
 
@@ -652,8 +845,6 @@
 				var	random = parseInt(Math.random() * 100),
 					decide = decisionRatio.$get('min<='+ random +', max>='+ random, true)[0];
 
-				console.log(random, decisionRatio);
-
 				// 执行随机决定
 				switch ( decide.key ) {
 					
@@ -662,39 +853,50 @@
 						var source = my[parseInt(Math.random() * my.length)],
 							target =  emptys[parseInt(Math.random() * emptys.length)];
 
-						// 随机派遣数量
-						var percentage = ['25%', '50%', '75%', '100%'],
-							random = percentage[parseInt(Math.random() * percentage.length)];
-						source.motion.selected(random);
+						if ( source && target ) {
 
-						// 设置所有者
-						target.motion.owner(uid);
+							// 随机派遣数量
+							var percentage = ['25%', '50%', '75%'],
+								random = percentage[parseInt(Math.random() * percentage.length)];
+							source.motion.selected(user, random);
 
-						// 执行
-						nw.move(source, target);
+							// 执行
+							nw.move(source, target);
+						}
 						break;
 
 					// 升级
 					case '1':
 						var random = parseInt(Math.random() * upgradeable.length),
 							source = upgradeable[random];
-						console.log(upgradeable, random, source);
 						source.motion.upgrade();
 						break;
 
 					// 进攻
 					case '2':
 
+						// 将来源位置，按资源量从低到高排序
+						my = nw.sortPlace(my, true);
+
+						// 将目标位置，按资源量从高到低排序
+						hostile = nw.sortPlace(hostile, false);
+
 						// 随机派遣和进攻目标
-						var source = my[parseInt(Math.random() * my.length)],
-							target = hostile[parseInt(Math.random() * hostile.length)];
+						var source = getRatio(my),
+							target = getRatio(hostile);
 
-						// 随机派遣数量
-						var percentage = ['25%', '50%', '75%', '100%'];
-						source.motion.selected(percentage[parseInt(Math.random() * percentage.length)]);
+						console.log(my, hostile);
+						console.log(source, target);
 
-						// 执行
-						nw.move(source, target);
+						if ( source && target ) {
+
+							// 随机派遣数量
+							var percentage = ['25%', '50%', '75%'];
+							source.motion.selected(user, percentage[parseInt(Math.random() * percentage.length)]);
+
+							// 执行
+							nw.move(source, target);
+						}
 						break;
 
 					// 防守（迁移）
@@ -705,8 +907,8 @@
 							target = my.$get('id!=' + source.id)[parseInt(Math.random() * my.$get('id!=' + source.id).length)];
 
 						// 随机派遣数量
-						var percentage = ['25%', '50%', '75%', '100%'];
-						source.motion.selected(percentage[parseInt(Math.random() * percentage.length)]);
+						var percentage = ['25%', '50%', '75%'];
+						source.motion.selected(user, percentage[parseInt(Math.random() * percentage.length)]);
 
 						// 执行
 						nw.move(source, target);
@@ -728,15 +930,25 @@
 				初始化
 			*********************************************/
 
-			// 执行
-			nw.allot();
+			// 开始
+			nw.start();
+
+			// 主视角
+			nw.control = nw.getUser('罗斌');
 
 			// 全部用户执行随机操作
-			// $.each(nw.groups, function(i, user){
-			// 	setTimeout(function(){
-			// 		auto(user.uid);
-			// 	}, Math.random() * 1000 + 1000);
-			// })
+			$.each(nw.groups, function(i, user){
+
+				// 分配控制
+				nw.allot(user);
+
+				// 自动
+				if ( user.auto ) {
+					setTimeout(function(){
+						auto(user.uid);
+					}, Math.random() * 1000 + 1000);
+				}
+			});
 
 
 
