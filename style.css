@@ -1,0 +1,50 @@
+@font-face {
+    font-family: 'icomoon';
+    src:    url('fonts/icomoon.eot?cglw3c');
+    src:    url('fonts/icomoon.eot?cglw3c#iefix') format('embedded-opentype'),
+        url('fonts/icomoon.ttf?cglw3c') format('truetype'),
+        url('fonts/icomoon.woff?cglw3c') format('woff'),
+        url('fonts/icomoon.svg?cglw3c#icomoon') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+[class^="icon-"], [class*=" icon-"] {
+    /* use !important to prevent issues with browser extensions that change fonts */
+    font-family: 'icomoon' !important;
+    speak: none;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    
+    /* Enable Ligatures ================ */
+    letter-spacing: 0;
+    -webkit-font-feature-settings: "liga";
+    -moz-font-feature-settings: "liga=1";
+    -moz-font-feature-settings: "liga";
+    -ms-font-feature-settings: "liga" 1;
+    -o-font-feature-settings: "liga";
+    font-feature-settings: "liga";
+
+    /* Better Font Rendering =========== */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-arrow-up:before {
+    content: "\e903";
+}
+.icon-nWar_1:before {
+    content: "\e902";
+}
+.icon-nWar_2:before {
+    content: "\e90c";
+}
+.icon-nWar_3:before {
+    content: "\e901";
+}
+.icon-nWar_4:before {
+    content: "\e90a";
+}
