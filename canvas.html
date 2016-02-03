@@ -1,0 +1,494 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>nWar</title>
+		<style>
+
+			.war{
+				/*position: relative;*/
+				/*width: 100px;*/
+				/*height: 100px;*/
+				/*top: 200px;*/
+				/*left: 50%;*/
+				/*margin-left: -50px;*/
+			}
+
+
+			.comm {
+				display: inline-block;
+				width: 50px;
+				height: 50px;
+				line-height: 50px;
+				border-radius: 50%;
+				position: absolute;
+				text-align: center;
+				color: white;
+				font-family: Arail;
+				float: left;
+			}
+			
+			.item{
+				background-color: #eee;
+				cursor: pointer;
+				z-index: 1;
+			}
+			.item:hover{
+				background-color: #ddd;
+			}
+
+			/* 移动状态 */
+			.move{
+				z-index: 0;
+				background-color: #ccc;
+			}
+
+			/* 临时状态 */ 
+			.temp{
+				width: 20px;
+				height: 20px;
+			}
+
+			.have{
+				background-color: red;
+			}
+			.have:hover{
+				background-color: #C00;
+			}
+
+			.act{ 
+				box-shadow: 0 0 10px #111;
+			}
+
+		</style>
+	</head>
+	<body>
+
+		<canvas id="myCanvas" width="500" height="500" ></canvas>
+
+		<script src="jquery-1.11.0.min.js" ></script>
+		<script src="narray-0.3.min.js" ></script>
+		<script src="./lib/4.growup.js" ></script>		<!-- 自增 -->
+		<script src="./lib/5.swipepad.js" ></script>	<!-- 宫格 -->
+		<script src="./lib/6.expand.js" ></script>		<!-- 元素功能 -->
+		<script src="./lib/8.canvas.js" ></script>		<!-- 元素功能 -->
+		<script>
+
+
+			function nWar () {}
+
+			// 定义方法
+			$.extend(nWar, {
+
+				// 引用工具
+				lib: {
+					swipepad: new nW5(),
+					expand: new nW6(),
+					growup: new nW4()
+				},
+
+				// 全部位置
+				places: [],
+
+				// 当前操作的位置
+				selected: null,
+
+				// 全部用户
+				groups: [
+					{
+						uid: (new Date().getTime() + parseInt(Math.random() * 360)).toString(36),
+						name: '电脑1',
+						color: 'orange',
+						value: 0,
+						selected: null,
+						auto: true
+					},
+					{
+						uid: (new Date().getTime() + parseInt(Math.random() * 360)).toString(36),
+						name: '电脑2',
+						color: 'blue',
+						value: 0,
+						selected: null,
+						auto: true
+					},
+					{
+						uid: (new Date().getTime() + parseInt(Math.random() * 360)).toString(36),
+						name: '罗斌',
+						color: 'red',
+						value: 0,
+						selected: null,
+						auto: false
+					},
+					{
+						uid: (new Date().getTime() + parseInt(Math.random() * 360)).toString(36),
+						name: 'William',
+						color: 'gray',
+						selected: null,
+						value: 0,
+						auto: true
+					},
+					{
+						uid: (new Date().getTime() + parseInt(Math.random() * 360)).toString(36),
+						name: 'James',
+						color: 'green',
+						selected: null,
+						value: 0,
+						auto: true
+					}
+				],
+
+				// 控制
+				control: '',
+
+				// 开始
+				start: function () {
+					var that = this;
+
+					// 设置总数量
+					this.lib.swipepad.conf.total = 12;
+
+					// 布局创建
+					this.places = this.lib.swipepad.create();
+
+					// 布局数据初始化
+					$.each(this.places, function(i, place){
+
+						// 资源功能绑定
+						place = that.lib.growup.bind(place);
+
+						// 按钮功能绑定
+						place = that.lib.expand.bind(place);
+
+						// 扩展功能绑定
+						place = that.placeMethod(place);
+
+						// 位置点击事件初始化
+						place.el.find('.growups-value').click(function(){
+							if ( that.control && that.control.selected )
+								that.move(that.control.selected, place);
+						});
+					});
+
+					// 拥有者位置部署
+					$.each(this.groups, function(i, user){
+
+						// 随机获取一个空位置
+						var place = that.lib.swipepad.random();
+
+						// 绑定指定给用户
+						place = that.lib.swipepad.user(place, user)
+
+						// 位置开始资源增长
+						that.lib.growup.start(place.id);
+					});
+
+					// 按钮功能定义
+					that.lib.expand.click(function(id, type){
+						var place = that.getPlace(id);
+
+						// 位置升级
+						if ( type == 'up' ) 
+							place.motion.upgrade();
+
+						// 位置移动比例选择
+						else if ( that.control )
+							place.motion.selected(that.control, type);
+					});
+
+					return that;
+				},
+
+				// 分配控制器
+				allot: function ( user ) {
+					var that = this
+
+					return that;
+				},
+
+				// 移动，从一个位置移动到另一个位置
+				move: function ( source, target ) {
+					var number = parseInt(source.params.resource.value * source.params.resource.confirm);
+						// type = this.moveType(source, target, number);
+
+					// 确保来源位置和目标位置都有
+					if ( !source && !target )
+						return;
+
+					// 确保来源和目标不相同
+					if ( source.id == target.id )
+						return;
+
+					// 确保来源移动值大于0
+					// if ( number <= 0 )
+					// 	return;
+
+					// 执行移动
+					// this[type](source, target, number);
+					this.lib.swipepad.move(source, target, number);
+
+					// 刷新位置资源
+					// this.lib.growup.start(target.id);
+					// this.lib.growup.start(source.id);
+				},
+
+
+				/********************************************
+					排序类
+				*********************************************/
+
+				sortPlace: function ( array, order ) {
+					function s ( o, r ) { return o ? !!r : !r; }
+					return array.sort(function(a, b){
+						if ( s ( order, a.params.resource.value < b.params.resource.value ) )
+							return -1;
+						else if ( s ( order, a.params.resource.value > b.params.resource.value ) )
+							return 1;
+						else
+							return 0;
+					});
+				},
+
+				/********************************************
+					查询类
+				*********************************************/
+
+				// 获取指定位置
+				getPlace: function ( pid ) {
+					var result;
+					$.each(this.places, function(i, place){
+						if ( place.id == pid ) 
+							return result = place;
+					});
+					return result;
+				},
+
+				// 获取位置集合，根据 uid
+				getPlacesByUid: function ( uid ) {
+					var result = [];
+					$.each(this.places, function(i, place){
+						if ( place.params.user.uid == uid ) 
+							result.push(place);
+					});
+					return result;
+				},
+
+				// 获取除此用户的其他用户位置集合，根据 uid
+				getOtherPlacesByUid: function ( uid ) {
+					var result = [];
+					$.each(this.places, function(i, place){
+						if ( place.params.user.uid != uid && place.params.user.uid != '' ) 
+							result.push(place);
+					});
+					return result;
+				},
+
+				// 获取空位置集合
+				getEmptyPlaces: function () {
+					var result = [];
+					$.each(this.places, function(i, place){
+						if ( !place.params.user.uid ) 
+							result.push(place);
+					});
+					return result;
+				},
+
+				// 获取指定用户，根据 uid 和 name
+				getUser: function ( value ) {
+					var result;
+					$.each(this.groups, function(i, user){
+						if ( user.uid == value || user.name == value ) 
+							return result = user;
+					});
+					return result;
+				},
+
+				/********************************************
+					所有动作
+				*********************************************/
+
+				// 占领
+				// toNew: function ( source, target, number ) {
+
+				// 	source.motion.shift(target, number);
+
+
+				// 	// source.motion.detach(number, '迁移');
+				// 	// target.motion.station(number, '占领');
+				// 	target.motion.owner(source.params.user.uid);	// 新位置归属拥有者
+				// },
+
+				// // 迁移 
+				// toShift: function ( source, target, number ) {
+				// 	source.motion.detach(number, '迁移');
+				// 	target.motion.station(number, '驻扎');
+				// },
+
+				// // 进攻
+				// toAttack: function ( source, target, number ) {
+				// 	source.motion.detach(number, '进攻');
+				// 	target.motion.detach(number, '防守');
+				// },
+
+				// // 攻占
+				// toGsvj: function ( source, target, number ) {
+				// 	source.motion.detach(number, '进攻');
+				// 	target.motion.detach(target.params.resource.value, '防守');
+				// 	target.motion.station(number - target.params.resource.value, '攻占');
+				// 	target.motion.owner(source.params.user.uid);	// 更改拥有者
+				// },
+
+				// // 全灭
+				// toEntirely: function ( source, target, number ) {
+				// 	source.motion.detach(number, '进攻');
+				// 	target.motion.detach(number, '失守');
+				// 	target.motion.leave();
+				// },
+
+				// // 升级
+				// toUpgrade: function ( source, target, number ) {
+				// 	source.motion.upgrade();
+				// },
+
+				// // 扩建
+				// toExtend: function ( uid ) {
+				// 	this.lib.swipepad.random()		// 随机获取一个空位置
+				// 		.motion.owner(uid);			// 设置所有者
+				// },
+
+				/********************************************
+					扩展方法
+				*********************************************/
+
+				// 位置方法
+				placeMethod: function ( place ) {
+					var that = this;
+					
+					// 位置扩展方法
+					$.extend(place.motion, {
+
+						// 设置所有者
+						owner: function ( uid ) {
+							var user = that.getUser(uid);;
+
+							// 设置位置归属拥有者
+							if ( user )
+								that.lib.swipepad.user(place, user);
+
+							return place;
+						},
+
+						// 移动指定数量的
+						into: function ( source, sourceuid, number ) {
+
+							// 占领
+							if ( !place.params.user.uid ) {
+								place.motion.station(number, '占领');
+								place.motion.owner(sourceuid);	// 新位置归属拥有者
+							}
+							
+							// 迁移
+							else if ( place.params.user.uid == sourceuid ) {
+								place.motion.station(number, '驻扎');
+
+								// 撤离
+								if ( source.params.resource.value <= 0 ) {
+									source.motion.leave();
+								}
+							}
+							
+							// 进攻
+							else if ( place.params.user.uid != sourceuid ) {
+								place.motion.detach(number, '防守');
+
+								// 失守
+								if ( place.params.resource.value <= 0 ) {
+									place.motion.leave();
+								}
+							}
+
+							// 刷新位置资源
+							that.lib.growup.start(place.id);
+							that.lib.growup.start(source.id);
+						},
+
+						// 撤离
+						leave: function () {
+							that.lib.growup.end(place.id);
+							that.lib.swipepad.quit(place.id);
+						},
+
+						// 派遣出去
+						detach: function ( value, remark ) {
+							place.motion.subValue(value, remark);
+
+							// 弃城
+							if ( place.params.resource.confirm == 1 ) {
+								place.motion.leave();
+							}
+						},
+
+						// 驻扎进来
+						station: function ( value, remark ) {
+							place.motion.addValue(value, remark);
+						},
+
+						// 升级 资源增长
+						upgrade: function () {
+							that.lib.growup.up(place.id, function(){
+
+								// 更新位置参数显示
+								that.lib.swipepad.set(place.id);
+
+								// 重置并生产资源
+								that.lib.growup.start(place.id);
+
+								// 生成图标
+								that.lib.swipepad.icon(place);
+							});
+						},
+
+						// 设置资源
+						value: function ( value, remark ) {
+							that.lib.growup.set(place.id, value, remark);
+							that.lib.swipepad.set(place.id, value)
+						},
+
+						// 添加资源
+						addValue: function ( value, uid, remark ) {
+							place.motion.value(place.params.resource.value + value, remark);
+						},
+
+						// 减少资源
+						subValue: function ( value, remark ) {
+							place.motion.value(place.params.resource.value - value, remark);
+						},
+
+						// 选择
+						// @param {string} value = percent
+						selected: function ( user, value ) {
+							place.params.resource.confirm = parseInt(value) / 100;
+
+							// 位置保存至操作选择状态
+							user.selected = place;
+						}
+					});
+
+					return place;
+				}
+			});
+
+			nw = nWar;
+
+
+			/********************************************
+				初始化
+			*********************************************/
+
+			// 开始
+			nw.start();
+
+
+
+		</script>
+	</body>
+</html>
